@@ -1,6 +1,9 @@
-from fastapi import FastAPI, Path, Query, HTTPException, status
+from fastapi import FastAPI, Path, Query, HTTPException, status,UploadFile,File
 from typing import Optional
 from pydantic import BaseModel
+from PIL import Image
+import io
+from fastapi.responses import StreamingResponse
 
 app = FastAPI()
 
@@ -63,3 +66,20 @@ def delete_item(item_id: int = Query(..., description='The ID of the item you wa
         return {'error': 'ID does not exist'}
     del inventory[item_id]
     return {'success': "Item deleted"}
+
+
+#convert image to black and white
+@app.post('/convert-image/')
+def convert_image_to_black_white(file:UploadFile=File(...)):
+    try:
+        image=Image.open(file.file).convert('L')#grayscale
+        buf=io.BytesIO()
+        image.save(buf,format='PNG')
+        buf.seek(0)
+        return StreamingResponse(buf,media_type='image/png')
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Image processing failed: {str(e)}")
+
+
+
+
